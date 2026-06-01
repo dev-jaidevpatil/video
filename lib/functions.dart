@@ -1,13 +1,10 @@
-import 'package:video_player/video_player.dart';
-import 'package:video/globals.dart';
+String formatDuration(Duration duration) {
+  final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
+  final seconds = duration.inSeconds.remainder(60).toString().padLeft(2, '0');
 
-Future<void> play(String url) async {
-  if (url.isEmpty) return;
-  if (videoPlayerController.value.isInitialized) {
-    await videoPlayerController.dispose();
+  if (duration.inHours > 0) {
+    return '${duration.inHours}:$minutes:$seconds';
   }
-  videoPlayerController = VideoPlayerController.network(url);
-  return videoPlayerController.initialize().then(
-    (value) => (videoPlayerController.play()),
-  );
+
+  return '$minutes:$seconds';
 }
