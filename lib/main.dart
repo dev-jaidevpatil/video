@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:video/app_config.dart';
 import 'package:video/functions.dart';
-import 'package:video/globals.dart';
+import 'package:video/media_library.dart';
 import 'package:video/widgets.dart';
 import 'package:video_player/video_player.dart';
 
@@ -15,21 +16,23 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'Video Studio',
+      title: AppText.title,
       theme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2EC4B6),
+          seedColor: AppColors.seed,
           brightness: Brightness.dark,
         ),
-        scaffoldBackgroundColor: const Color(0xFF0B0F17),
+        scaffoldBackgroundColor: AppColors.background,
         sliderTheme: const SliderThemeData(
-          trackHeight: 3,
-          thumbShape: RoundSliderThumbShape(enabledThumbRadius: 6),
+          trackHeight: AppSizes.sliderTrackHeight,
+          thumbShape: RoundSliderThumbShape(
+            enabledThumbRadius: AppSizes.sliderThumbRadius,
+          ),
         ),
       ),
-      home: const MyHomePage(title: 'Video Studio'),
+      home: const MyHomePage(title: AppText.title),
     );
   }
 }
@@ -50,22 +53,22 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _hasError = false;
   bool _isMuted = false;
 
-  VideoItem get _selectedVideo => videos[_selectedIndex];
+  MediaItem get _selectedMedia => mediaLibrary[_selectedIndex];
 
   @override
   void initState() {
     super.initState();
-    _loadVideo(0);
+    _loadMedia(0);
   }
 
   @override
   void dispose() {
-    _controller?.removeListener(_onVideoChanged);
+    _controller?.removeListener(_onMediaChanged);
     _controller?.dispose();
     super.dispose();
   }
 
-  Future<void> _loadVideo(int index) async {
+  Future<void> _loadMedia(int index) async {
     setState(() {
       _selectedIndex = index;
       _isLoading = true;
@@ -73,20 +76,18 @@ class _MyHomePageState extends State<MyHomePage> {
     });
 
     final oldController = _controller;
-    oldController?.removeListener(_onVideoChanged);
+    oldController?.removeListener(_onMediaChanged);
     _controller = null;
     await oldController?.dispose();
 
-    final nextController = VideoPlayerController.networkUrl(
-      Uri.parse(videos[index].url),
-      videoPlayerOptions: VideoPlayerOptions(mixWithOthers: true),
-    );
+    final media = mediaLibrary[index];
+    final nextController = _createController(media);
 
     try {
       await nextController.initialize();
       await nextController.setLooping(false);
       await nextController.setVolume(_isMuted ? 0 : 1);
-      nextController.addListener(_onVideoChanged);
+      nextController.addListener(_onMediaChanged);
 
       if (!mounted) {
         await nextController.dispose();
@@ -108,7 +109,22 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  void _onVideoChanged() {
+  VideoPlayerController _createController(MediaItem media) {
+    final options = VideoPlayerOptions(mixWithOthers: true);
+
+    return switch (media.sourceType) {
+      MediaSource.network => VideoPlayerController.networkUrl(
+        Uri.parse(media.source),
+        videoPlayerOptions: options,
+      ),
+      MediaSource.asset => VideoPlayerController.asset(
+        media.source,
+        videoPlayerOptions: options,
+      ),
+    };
+  }
+
+  void _onMediaChanged() {
     if (mounted) {
       setState(() {});
     }
@@ -148,28 +164,32 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.sizeOf(context);
-    final isWide = size.width >= 840;
+    final isWide = size.width >= AppBreakpoints.wide;
 
     return Scaffold(
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: isWide
-              ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(flex: 7, child: _buildPlayerArea()),
-                    const SizedBox(width: 18),
-                    SizedBox(width: 360, child: _buildPlaylist()),
-                  ],
-                )
-              : Column(
-                  children: [
-                    _buildPlayerArea(),
-                    const SizedBox(height: 18),
-                    Expanded(child: _buildPlaylist()),
-                  ],
-                ),
+          padding: const EdgeInsets.all(AppSpacing.screen),
+          child:
+              isWide
+                  ? Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 7, child: _buildPlayerArea()),
+                      const SizedBox(width: AppSpacing.panelGap),
+                      SizedBox(
+                        width: AppSizes.playlistWidth,
+                        child: _buildPlaylist(),
+                      ),
+                    ],
+                  )
+                  : Column(
+                    children: [
+                      _buildPlayerArea(),
+                      const SizedBox(height: AppSpacing.panelGap),
+                      Expanded(child: _buildPlaylist()),
+                    ],
+                  ),
         ),
       ),
     );
@@ -183,40 +203,40 @@ class _MyHomePageState extends State<MyHomePage> {
         Text(
           widget.title,
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w900,
-              ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          _selectedVideo.title,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: const Color(0xFF9AA8B9),
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-        const SizedBox(height: 16),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: AspectRatio(
-            aspectRatio: 16 / 9,
-            child: _buildVideoSurface(),
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: AppSpacing.small),
+        Text(
+          _selectedMedia.title,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: AppColors.mutedText,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sectionGap),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(AppSizes.radius),
+          child: AspectRatio(
+            aspectRatio: AppSizes.videoAspectRatio,
+            child: _buildMediaSurface(),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.controlGap),
         _buildControls(),
       ],
     );
   }
 
-  Widget _buildVideoSurface() {
+  Widget _buildMediaSurface() {
     final controller = _controller;
 
     if (_isLoading) {
       return PlayerPlaceholder(
         icon: Icons.hourglass_empty_rounded,
-        title: 'Loading video',
-        message: _selectedVideo.url,
+        title: AppText.loadingTitle,
+        message: _selectedMedia.source,
         showLoader: true,
       );
     }
@@ -224,9 +244,13 @@ class _MyHomePageState extends State<MyHomePage> {
     if (_hasError || controller == null || !controller.value.isInitialized) {
       return const PlayerPlaceholder(
         icon: Icons.error_outline_rounded,
-        title: 'This video could not be loaded',
-        message: 'Pick another item or check your internet connection.',
+        title: AppText.errorTitle,
+        message: AppText.errorMessage,
       );
+    }
+
+    if (_selectedMedia.isMusic) {
+      return MusicSurface(media: _selectedMedia);
     }
 
     return Stack(
@@ -250,13 +274,13 @@ class _MyHomePageState extends State<MyHomePage> {
               onTap: _togglePlay,
               child: AnimatedOpacity(
                 opacity: controller.value.isPlaying ? 0 : 1,
-                duration: const Duration(milliseconds: 180),
+                duration: AppDurations.playOverlayFade,
                 child: Container(
-                  color: Colors.black.withValues(alpha: 0.28),
+                  color: AppColors.overlay,
                   alignment: Alignment.center,
                   child: const Icon(
                     Icons.play_circle_fill_rounded,
-                    size: 76,
+                    size: AppSizes.playIcon,
                     color: Colors.white,
                   ),
                 ),
@@ -274,20 +298,24 @@ class _MyHomePageState extends State<MyHomePage> {
     final isReady = value?.isInitialized ?? false;
     final position = isReady ? value!.position : Duration.zero;
     final duration = isReady ? value!.duration : Duration.zero;
-    final max = duration.inMilliseconds
-        .toDouble()
-        .clamp(1, double.infinity)
-        .toDouble();
-    final progress = position.inMilliseconds.toDouble().clamp(0, max).toDouble();
+    final max =
+        duration.inMilliseconds.toDouble().clamp(1, double.infinity).toDouble();
+    final progress =
+        position.inMilliseconds.toDouble().clamp(0, max).toDouble();
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFF101621),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF1E293B)),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radius),
+        border: Border.all(color: AppColors.border),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 10, 14, 12),
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.controlGap,
+          AppSpacing.tileGap,
+          AppSpacing.controlGap,
+          AppSpacing.controlGap,
+        ),
         child: Column(
           children: [
             Row(
@@ -301,7 +329,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         : Icons.play_arrow_rounded,
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: AppSpacing.tileGap),
                 IconButton(
                   tooltip: _isMuted ? 'Unmute' : 'Mute',
                   onPressed: isReady ? _toggleSound : null,
@@ -311,7 +339,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         : Icons.volume_up_rounded,
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: AppSizes.radius),
                 Expanded(
                   child: Slider(
                     min: 0,
@@ -322,18 +350,12 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ],
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: AppSpacing.tiny),
             Row(
               children: [
-                Text(
-                  formatDuration(position),
-                  style: _timeStyle(context),
-                ),
+                Text(formatDuration(position), style: _timeStyle(context)),
                 const Spacer(),
-                Text(
-                  formatDuration(duration),
-                  style: _timeStyle(context),
-                ),
+                Text(formatDuration(duration), style: _timeStyle(context)),
               ],
             ),
           ],
@@ -344,9 +366,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   TextStyle? _timeStyle(BuildContext context) {
     return Theme.of(context).textTheme.labelMedium?.copyWith(
-          color: const Color(0xFF9AA8B9),
-          fontWeight: FontWeight.w700,
-        );
+      color: AppColors.mutedText,
+      fontWeight: FontWeight.w700,
+    );
   }
 
   Widget _buildPlaylist() {
@@ -356,32 +378,31 @@ class _MyHomePageState extends State<MyHomePage> {
         Row(
           children: [
             Text(
-              'Playlist',
+              AppText.playlistTitle,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                  ),
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+              ),
             ),
             const Spacer(),
             Text(
-              '${videos.length} videos',
+              '${mediaLibrary.length} items',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: const Color(0xFF9AA8B9),
-                    fontWeight: FontWeight.w700,
-                  ),
+                color: AppColors.mutedText,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: AppSpacing.controlGap),
         Expanded(
           child: ListView.builder(
-            itemCount: videos.length,
+            itemCount: mediaLibrary.length,
             itemBuilder: (context, index) {
-              return VideoListTile(
-                video: videos[index],
-                index: index,
+              return MediaListTile(
+                media: mediaLibrary[index],
                 isSelected: index == _selectedIndex,
-                onTap: () => _loadVideo(index),
+                onTap: () => _loadMedia(index),
               );
             },
           ),

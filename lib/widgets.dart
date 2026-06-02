@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:video/globals.dart';
+import 'package:video/app_config.dart';
+import 'package:video/media_library.dart';
 
 class PlayerPlaceholder extends StatelessWidget {
   const PlayerPlaceholder({
@@ -18,23 +19,27 @@ class PlayerPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: Color(0xFF080A0F),
-      ),
+      decoration: const BoxDecoration(color: AppColors.playerBackground),
       child: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.screen),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (showLoader)
                 const SizedBox.square(
-                  dimension: 34,
-                  child: CircularProgressIndicator(strokeWidth: 3),
+                  dimension: AppSizes.loadingIndicator,
+                  child: CircularProgressIndicator(
+                    strokeWidth: AppSizes.sliderTrackHeight,
+                  ),
                 )
               else
-                Icon(icon, color: const Color(0xFF8EA0B8), size: 42),
-              const SizedBox(height: 16),
+                Icon(
+                  icon,
+                  color: AppColors.iconMuted,
+                  size: AppSizes.placeholderIcon,
+                ),
+              const SizedBox(height: AppSpacing.sectionGap),
               Text(
                 title,
                 textAlign: TextAlign.center,
@@ -43,12 +48,12 @@ class PlayerPlaceholder extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.compact),
               Text(
                 message,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF94A3B8),
+                      color: AppColors.softText,
                       height: 1.35,
                     ),
               ),
@@ -60,54 +65,117 @@ class PlayerPlaceholder extends StatelessWidget {
   }
 }
 
-class VideoListTile extends StatelessWidget {
-  const VideoListTile({
+class MusicSurface extends StatelessWidget {
+  const MusicSurface({
     super.key,
-    required this.video,
-    required this.index,
+    required this.media,
+  });
+
+  final MediaItem media;
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = Color(media.accentColor);
+
+    return DecoratedBox(
+      decoration: const BoxDecoration(color: AppColors.playerBackground),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.screen),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: AppSizes.tileIconBox * 2,
+                height: AppSizes.tileIconBox * 2,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: accent.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(AppSizes.radius),
+                  border: Border.all(color: accent.withValues(alpha: 0.5)),
+                ),
+                child: Icon(
+                  Icons.music_note_rounded,
+                  size: AppSizes.playIcon,
+                  color: accent,
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sectionGap),
+              Text(
+                media.title,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+              const SizedBox(height: AppSpacing.compact),
+              Text(
+                media.description,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.softText,
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class MediaListTile extends StatelessWidget {
+  const MediaListTile({
+    super.key,
+    required this.media,
     required this.isSelected,
     required this.onTap,
   });
 
-  final VideoItem video;
-  final int index;
+  final MediaItem media;
   final bool isSelected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final accent = Color(video.accentColor);
+    final accent = Color(media.accentColor);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: AppSpacing.tileGap),
       child: Material(
-        color: isSelected ? const Color(0xFF172033) : const Color(0xFF101621),
-        borderRadius: BorderRadius.circular(8),
+        color: isSelected ? AppColors.selectedSurface : AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSizes.radius),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppSizes.radius),
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(AppSpacing.tilePadding),
             child: Row(
               children: [
                 Container(
-                  width: 54,
-                  height: 54,
+                  width: AppSizes.tileIconBox,
+                  height: AppSizes.tileIconBox,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: accent.withValues(alpha: 0.16),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppSizes.radius),
                     border: Border.all(
                       color: accent.withValues(alpha: isSelected ? 0.9 : 0.35),
                     ),
                   ),
                   child: Icon(
-                    isSelected ? Icons.play_arrow_rounded : Icons.movie_rounded,
+                    isSelected
+                        ? Icons.play_arrow_rounded
+                        : media.isMusic
+                            ? Icons.music_note_rounded
+                            : Icons.movie_rounded,
                     color: accent,
-                    size: 30,
+                    size: AppSizes.tileIcon,
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: AppSpacing.tilePadding),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -116,7 +184,7 @@ class VideoListTile extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              video.title,
+                              media.title,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: Theme.of(context)
@@ -128,24 +196,24 @@ class VideoListTile extends StatelessWidget {
                                   ),
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: AppSpacing.tileGap),
                           Text(
-                            video.duration,
+                            media.durationLabel,
                             style:
                                 Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: const Color(0xFF9AA8B9),
+                                      color: AppColors.mutedText,
                                       fontWeight: FontWeight.w700,
                                     ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: AppSpacing.small),
                       Text(
-                        video.description,
+                        media.description,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: const Color(0xFF9AA8B9),
+                              color: AppColors.mutedText,
                               height: 1.3,
                             ),
                       ),
