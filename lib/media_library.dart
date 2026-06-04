@@ -38,8 +38,7 @@ const List<MediaItem> mediaLibrary = [
     type: MediaType.video,
     title: 'Flower Sample',
     description: 'Small MDN MP4 sample that loads quickly in web builds.',
-    source:
-        'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+    source: "https://youtu.be/__bHEfJ29j0?si=sAZSTEnDGkLmfEA9",
     durationLabel: 'Video',
     accentColor: 0xFFFF9F1C,
   ),

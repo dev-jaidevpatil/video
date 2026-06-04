@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:video/app_config.dart';
 import 'package:video/functions.dart';
 import 'package:video/media_library.dart';
+import 'package:video/splash_screen.dart';
 import 'package:video/widgets.dart';
 import 'package:video_player/video_player.dart';
 
@@ -32,7 +33,10 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const MyHomePage(title: AppText.title),
+      home: const SplashScreen(),
+      routes: {
+        '/home': (_) => const MyHomePage(title: AppText.title),
+      },
     );
   }
 }

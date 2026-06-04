@@ -5,7 +5,8 @@ class AppText {
   static const playlistTitle = 'Playlist';
   static const loadingTitle = 'Loading media';
   static const errorTitle = 'This media could not be loaded';
-  static const errorMessage = 'Pick another item or check your internet connection.';
+  static const errorMessage =
+      'Pick another item or check your internet connection.';
 }
 
 class AppBreakpoints {
@@ -51,5 +52,5 @@ class AppColors {
   static const mutedText = Color(0xFF9AA8B9);
   static const softText = Color(0xFF94A3B8);
   static const iconMuted = Color(0xFF8EA0B8);
-  static const overlay = Color(0x47000000);
+  static const overlay = Colors.pink;
 }
